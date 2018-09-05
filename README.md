@@ -7,11 +7,12 @@ This project basically combines some of the nice FastLED example animations with
 ## Credits
 
 #### FastLED
-Most of the FastLED animations are not made by me. All credits belong to the awesome FastLED team! See here for the [FastLED project](https://github.com/FastLED), the [documentation](http://fastled.io) and for some [awesome examples that I used in this code](https://github.com/FastLED/FastLED/blob/master/examples/DemoReel100/DemoReel100.ino).
+Most of the FastLED animations are not made by me. All credits belong to the awesome FastLED team! See here for the [FastLED project](https://github.com/FastLED), the [documentation](http://fastled.io) and for some [awesome examples that I used in this code](https://github.com/FastLED/FastLED/blob/master/examples/DemoReel100/DemoReel100.ino). Their code is licensed under the [MIT](https://opensource.org/licenses/MIT) license.
 
 #### ESP 32 WebSerber / WiFi
-The code for connecting to WiFi and setting up the HTTP webserver is heavily inspired / taken from [espressif/arduino-esp32](https://github.com/espressif/arduino-esp32). All credits for this great work belong to the respective creators! :)
+The code for connecting to WiFi and setting up the HTTP webserver is heavily inspired by the[espressif/arduino-esp32 webserver examples](https://github.com/espressif/arduino-esp32/blob/master/libraries/WebServer/examples/HelloServer/HelloServer.ino). All credits for this great work belong to the respective creators! :)
 For esp related development go check out their docs / [repos](https://github.com/espressif)!
+Their code is licensed under the [GNU Lesser General Public License](https://www.gnu.org/licenses/lgpl-3.0.en.html)
 
 ## Setup
 
