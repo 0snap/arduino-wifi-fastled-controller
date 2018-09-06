@@ -1,21 +1,31 @@
-#include <WiFi.h>
-#include <WiFiClient.h>
-#include <WebServer.h>
-#include <ESPmDNS.h>
-
-#define FASTLED_ALLOW_INTERRUPTS 0
-#include "FastLED.h"
-FASTLED_USING_NAMESPACE
+// set the board - 1: use it. 0: don't use it. This regulates which libs are loaded.
+#define ESP32 1
+//#define ESP8266 1
 
 // WiFi and webserver
 // replace the SSID and password with the credentials of your WiFi
 const char* ssid = "gimmewebz";
 const char* password = "gimmegoddamninternetznow";
-WebServer server(80);
+
+#ifdef ESP32
+  #include <WiFi.h>
+  #include <WiFiClient.h>
+  #include <WebServer.h>
+  WebServer server(80);
+#elif ESP8266
+  #include <ESP8266WiFi.h>
+  #include <ESP8266WebServer.h>
+  ESP8266WebServer server(80);
+#endif
+
+#define FASTLED_ALLOW_INTERRUPTS 0
+#include "FastLED.h"
+FASTLED_USING_NAMESPACE
+
 
 // FastLED
 #define DATA_PIN    0
-#define LED_TYPE    WS2811
+#define LED_TYPE    WS2812
 #define COLOR_ORDER GRB
 #define NUM_LEDS    304
 CRGB leds[NUM_LEDS];
@@ -72,12 +82,9 @@ void handleRoot() {
 }
 
 
-void startWifi(void * pvParameters) {
+void startWifi() {
   // based on espressif esp32 WebServer examples, i.e. see
   // https://github.com/espressif/arduino-esp32/blob/master/libraries/WebServer/examples/HelloServer/HelloServer.ino
-  if (MDNS.begin("esp32")) {
-    Serial.println("MDNS responder started");
-  }
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -103,15 +110,14 @@ void startWifi(void * pvParameters) {
 
   server.begin();
   Serial.println("\nServer listening on port 80");
-
-  vTaskDelete(NULL);
 }
 
 void setup(void) {
   Serial.begin(115200);
 
   // start wifi
-  xTaskCreatePinnedToCore(startWifi, "start_WiFi", 10000, NULL, 0, NULL, 0);
+  //  xTaskCreatePinnedToCore(startWifi, "start_WiFi", 10000, NULL, 0, NULL, 0);
+  startWifi();
 
   // fastled
   delay(2000);
