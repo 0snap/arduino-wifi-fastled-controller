@@ -1,8 +1,10 @@
 # Controller for FastLED Stripe via WiFi+webserver
 
-The code is made for the esp32 board.
+The code is made such that it can be used for `esp32` and `esp8266` boards.
 
-This project basically combines some of the nice FastLED example animations with the espressif webserver, that will automatically hook into local WiFi. You can talk to the webserver (eg. mobile web view) or simply send post requests. On request, the next animation is chosen and will be shown on the LED stripe.
+This project basically combines some of the nice FastLED example animations with a webserver, that will automatically hook into local WiFi. The webserver and WiFi libraries are loaded for the board type that you configure.
+
+You can talk to the webserver (eg. mobile web view) or simply send post requests. On request, the next animation is chosen and will be shown on the LED stripe.
 
 ## Credits
 
