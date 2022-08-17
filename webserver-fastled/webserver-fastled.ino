@@ -36,11 +36,26 @@ CRGB leds[NUM_LEDS];
 #define BRIGHTNESS          255
 #define FRAMES_PER_SECOND   120
 
+#include "animations.h"
+
 // inspired by the Fast LED examples!
 // see https://github.com/FastLED/FastLED
 uint8_t currentAnimation = 0;
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
+
+// Animation array typedef
+typedef void (*Animations[])(CRGB*,int);
+
+/*
+  * The actual function calls (method names) of animation functions
+  */
+Animations animations = { wonderland, blueSparks, fire, snow, confetti, halloween, fixedRainbow, movingRainbow, sinelon, juggle, cloudSlowBeatWave };
+
+/*
+  * Display names of the animation for the web-view. Keep same order as other array.
+  */
+String animationNames[] = { "Wonderland", "Blue Sparks", "Fire", "Snow Flakes", "Confetti", "Halloween", "Rainbow", "Moving Rainbow", "Running Light", "Multiple Running Lights", "Clouded Beats" };
 
 
 void setup(void) {
@@ -48,22 +63,13 @@ void setup(void) {
   Serial.println("setup");
 
   // start wifi
-  //  xTaskCreatePinnedToCore(startWifi, "start_WiFi", 10000, NULL, 0, NULL, 0);
   startWifi();
 
   // fastled
-  delay(2000);
+  delay(1000);
   FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(Typical8mmPixel);
   FastLED.setBrightness(BRIGHTNESS);
 }
-
-typedef void (*Animations[])();
-
-//Animations animations = { blueSparks, snow, confetti, fixedRainbow, movingRainbow, sinelon, juggle };             // The actual function calls (method names) of animation functions
-//String animationNames[] = { "Blue Sparks", "Snow Flakes", "Confetti", "Rainbow", "Moving Rainbow", "Running Light", "6 Running Lights" }; // Display names of the animation for the web-view. Keep same order as other array.
-Animations animations = { wonderland, blueSparks, fire, snow, confetti, halloween, fixedRainbow, movingRainbow, sinelon, juggle, cloudSlowBeatWave };             // The actual function calls (method names) of animation functions
-String animationNames[] = { "Wonderland", "Blue Sparks", "Fire", "Snow Flakes", "Confetti", "Halloween", "Rainbow", "Moving Rainbow", "Running Light", "Multiple Running Lights", "Clouded Beats" }; // Display names of the animation for the web-view. Keep same order as other array.
-
 
 
 /*
@@ -151,7 +157,7 @@ void startWifi() {
 void loop(void) {
   server.handleClient();
 
-  animations[currentAnimation]();
+  animations[currentAnimation](leds, NUM_LEDS);
   FastLED.show();
   FastLED.delay(1000/FRAMES_PER_SECOND);
 }
@@ -159,125 +165,4 @@ void loop(void) {
 void nextPattern() {
   Serial.println("next pattern");
   currentAnimation = (currentAnimation + 1) % ARRAY_SIZE(animations);
-}
-
-void snow() {
-  fadeLightBy(leds, NUM_LEDS, 2);
-  int pos = random16(NUM_LEDS);
-
-  CRGB snow_white = CRGB(255, 200, 150);
-  leds[pos] = snow_white;
-  FastLED.setTemperature(Tungsten40W);
-  delay(600 / NUM_LEDS);
-}
-
-void halloween() {
-  CHSV orange = CHSV(25, 200, 200);
-  CHSV blue = CHSV(160, 200, 200);
-
-  CRGB grad[NUM_LEDS * 2];
-  fill_gradient(grad, 0, blue, NUM_LEDS, orange);
-  fill_gradient(grad, NUM_LEDS + 1, orange, NUM_LEDS * 2, blue);
-
-  gradient(grad);
-}
-
-
-void fire() {
-  CHSV yellow = CHSV(42, 200, 200);
-  CHSV red = CHSV(235, 200, 200);
-
-  CRGB grad[NUM_LEDS * 2];
-  fill_gradient(grad, 0, yellow, NUM_LEDS, red);
-  fill_gradient(grad, NUM_LEDS + 1, red, NUM_LEDS * 2, yellow);
-
-  gradient(grad);
-}
-
-void wonderland() {
-  CHSV green = CHSV(85, 200, 200);
-  CHSV red = CHSV(220, 200, 200);
-
-  CRGB grad[NUM_LEDS * 2];
-  fill_gradient(grad, 0, green, NUM_LEDS, red, LONGEST_HUES);
-  fill_gradient(grad, NUM_LEDS + 1, red, NUM_LEDS * 2, green, LONGEST_HUES);
-
-  gradient(grad);
-}
-
-void gradient(CRGB *gradient) {
-  // http://fastled.io/docs/3.1/group___colorutils.html#ga3144bb2bb66aeed33e20f4fdd6cc1a98
-  // https://github.com/FastLED/FastLED/wiki/Pixel-reference
-
-  static uint16_t offset = 0;
-
-  EVERY_N_MILLISECONDS(50) {
-    for (uint16_t i = 0; i < NUM_LEDS; i++) {
-      uint16_t idx = (i+offset) % NUM_LEDS;
-      leds[idx] = gradient[i * 2];
-    }
-    offset = (offset + 1) % NUM_LEDS;
-  }
-
-  FastLED.setTemperature(Tungsten40W);
-}
-
-void blueSparks() {
-  fadeToBlackBy(leds, NUM_LEDS, 10);
-  fract8 chanceOfGlitter = NUM_LEDS / 2;
-
-  if( random8() < chanceOfGlitter) {
-    leds[ random16(NUM_LEDS) ] += CRGB::White;
-    leds[ random16(NUM_LEDS) ] += CRGB::Blue;
-  }
-}
-
-void movingRainbow() {
-  // cycle forward with a rainbow
-  static uint8_t hue = 0;
-  fill_rainbow(leds, NUM_LEDS, ++hue, 5);
-  FastLED.setTemperature(UncorrectedTemperature);
-}
-
-void fixedRainbow() {
-  fill_rainbow(leds, NUM_LEDS, 0);
-  FastLED.setTemperature(UncorrectedTemperature);
-}
-
-void confetti() {
-  // random colored speckles that blink in and fade smoothly
-  fadeToBlackBy(leds, NUM_LEDS, 10);
-  int pos = random16(NUM_LEDS);
-  static uint8_t hue = 0;
-  leds[pos] += CHSV(--hue + random8(64), 200, 255);
-  FastLED.setTemperature(UncorrectedTemperature);
-}
-
-void sinelon() {
-  // one running dot
-  fadeToBlackBy(leds, NUM_LEDS, 20);
-  int pos = beatsin16(13, 0, NUM_LEDS-1 );
-  static uint8_t hue = 0;
-  leds[pos] += CHSV(++hue, 255, 192);
-  FastLED.setTemperature(UncorrectedTemperature);
-}
-
-void juggle() {
-  // multiple running dots
-  fadeToBlackBy(leds, NUM_LEDS, 20);
-  uint8_t num_dots = 6;
-  byte dothue = 0;
-  for(int i = 0; i < num_dots; i++) {
-    leds[beatsin16(i+7, 0, NUM_LEDS-1 )] |= CHSV(dothue, 200, 255);
-    dothue += 32;
-  }
-  FastLED.setTemperature(UncorrectedTemperature);
-}
-
-void cloudSlowBeatWave() {
-  for (int i = 0; i < NUM_LEDS; i++) {
-    int colorIndex = beat8(30  + i % 40) + ease8InOutQuad(i + NUM_LEDS);
-    leds[i] = ColorFromPalette(CloudColors_p, colorIndex, NUM_LEDS, LINEARBLEND);
-  }
-  FastLED.setTemperature(UncorrectedTemperature);
 }
