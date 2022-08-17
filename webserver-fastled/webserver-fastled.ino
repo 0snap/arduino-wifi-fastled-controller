@@ -1,25 +1,44 @@
-// set the board - 1: use it. 0: don't use it. This regulates which libs are loaded.
+/*
+ * This controller code allows you to show different animations on a LED strip.
+ * You must configure the LED strip's properties according to the FastLED docs.
+ * Additionally, you need to configure if you want to use a button to switch
+ * animations or use WiFi (or both).
+ */
+
+// Define the board to regulate which libraries are loaded.
 #define ESP32 1
 //#define ESP8266 1
 
-// WiFi and webserver
-// replace the SSID and password with the credentials of your WiFi
-const char* ssid = "MagentaWLAN-QH63-2.4GHz";
-const char* password = "cacaolove<3";
+// Define to use WIFI or a button or both to change animations on the strip.
+#define WIFI 0
+#define BUTTON 1
 
-#ifdef ESP32
-  #include <WiFi.h>
-  #include <WiFiClient.h>
-  #include <WebServer.h>
-  WebServer server(80);
-#elif ESP8266
-  #include <ESP8266WiFi.h>
-  #include <ESP8266WebServer.h>
-  ESP8266WebServer server(80);
+
+#ifdef WIFI
+  // this name is shown in the browser 'app'
+  #define STRIP_NAME          "Mittel-Gang"
+  // Configure your WiFi settings for the webserver
+  // -> replace the SSID and password with the credentials of your WiFi
+  const char* ssid = "<wifi-ssid>";
+  const char* password = "<wifi-pass>";
+
+  #ifdef ESP32
+    #include <WiFi.h>
+    #include <WiFiClient.h>
+    #include <WebServer.h>
+    WebServer server(80);
+  #elif ESP8266
+    #include <ESP8266WiFi.h>
+    #include <ESP8266WebServer.h>
+    ESP8266WebServer server(80);
+  #endif
 #endif
 
-// this name is shown in the browser 'app'
-#define STRIP_NAME          "Mittel-Gang"
+#ifdef BUTTON
+  const int buttonPin = 22;
+  int buttonState = 0;
+  unsigned long buttonLast;
+#endif
 
 //#define FASTLED_ALLOW_INTERRUPTS 0
 #include <FastLED.h>
@@ -36,6 +55,8 @@ CRGB leds[NUM_LEDS];
 #define BRIGHTNESS          255
 #define FRAMES_PER_SECOND   120
 
+
+// Load the animations
 #include "animations.h"
 
 // inspired by the Fast LED examples!
@@ -62,8 +83,14 @@ void setup(void) {
   Serial.begin(57600);
   Serial.println("setup");
 
-  // start wifi
-  startWifi();
+
+  if (WIFI) {
+    startWifi();
+  }
+  if (BUTTON) {
+    pinMode(buttonPin, INPUT);
+    buttonLast = 1;
+  }
 
   // fastled
   delay(1000);
@@ -71,6 +98,34 @@ void setup(void) {
   FastLED.setBrightness(BRIGHTNESS);
 }
 
+void loop(void) {
+  if (WIFI) {
+    server.handleClient();
+  }
+
+  if (BUTTON) {
+    buttonState = digitalRead(buttonPin);
+    // ignore multiple button presses, unless they are a few hundred millis apart; switch pattern on press.
+    if (buttonState == HIGH && (millis() - buttonLast) > 800) {
+      nextPattern();
+      buttonLast = millis();
+    }
+  }
+
+  animations[currentAnimation](leds, NUM_LEDS);
+  FastLED.show();
+  FastLED.delay(1000/FRAMES_PER_SECOND);
+}
+
+void nextPattern() {
+  Serial.println("next pattern");
+  currentAnimation = (currentAnimation + 1) % ARRAY_SIZE(animations);
+  fadeToBlackBy(leds, NUM_LEDS, 255);
+}
+
+
+
+///// wifi webserver functions
 
 /*
  * This serves a very rudimentary responsive webview. Visit this in browser.
@@ -152,17 +207,4 @@ void startWifi() {
 
   server.begin();
   Serial.println("\nServer listening on port 80");
-}
-
-void loop(void) {
-  server.handleClient();
-
-  animations[currentAnimation](leds, NUM_LEDS);
-  FastLED.show();
-  FastLED.delay(1000/FRAMES_PER_SECOND);
-}
-
-void nextPattern() {
-  Serial.println("next pattern");
-  currentAnimation = (currentAnimation + 1) % ARRAY_SIZE(animations);
 }
